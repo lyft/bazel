@@ -36,8 +36,9 @@ import com.google.devtools.build.lib.packages.BuildType;
 import com.google.devtools.build.lib.skyframe.serialization.autocodec.AutoCodec;
 import com.google.devtools.build.lib.skyframe.serialization.autocodec.AutoCodec.VisibleForSerialization;
 import com.google.devtools.build.lib.skylarkbuildapi.RunfilesApi;
+import com.google.devtools.build.lib.skylarkbuildapi.SymlinkEntryApi;
 import com.google.devtools.build.lib.skylarkinterface.SkylarkPrinter;
-import com.google.devtools.build.lib.skylarkinterface.SkylarkValue;
+import com.google.devtools.build.lib.util.Fingerprint;
 import com.google.devtools.build.lib.vfs.PathFragment;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -114,7 +115,7 @@ public final class Runfiles implements RunfilesApi {
   // Goodnight, prince(ss)?, and sweet dreams.
   @AutoCodec
   @VisibleForSerialization
-  static final class SymlinkEntry implements SkylarkValue {
+  static final class SymlinkEntry implements SymlinkEntryApi {
     private final PathFragment path;
     private final Artifact artifact;
 
@@ -124,10 +125,16 @@ public final class Runfiles implements RunfilesApi {
       this.artifact = Preconditions.checkNotNull(artifact);
     }
 
+    @Override
+    public String getPathString() {
+      return getPath().getPathString();
+    }
+
     public PathFragment getPath() {
       return path;
     }
 
+    @Override
     public Artifact getArtifact() {
       return artifact;
     }
@@ -140,8 +147,8 @@ public final class Runfiles implements RunfilesApi {
     @Override
     public void repr(SkylarkPrinter printer) {
       printer.append("SymlinkEntry(path = ");
-      printer.repr(getPath().toString());
-      printer.append(", artifact = ");
+      printer.repr(getPathString());
+      printer.append(", target_file = ");
       getArtifact().repr(printer);
       printer.append(")");
     }
@@ -563,9 +570,8 @@ public final class Runfiles implements RunfilesApi {
     return legacyExternalRunfiles;
   }
 
-  /**
-   * Returns the root symlinks.
-   */
+  /** Returns the root symlinks. */
+  @Override
   public NestedSet<SymlinkEntry> getRootSymlinks() {
     return rootSymlinks;
   }
